@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="Architectural discussion notes and source-grounded review for KeshavSoft's JSON-first, instruction-driven construction system.">
+  <title>Declarative Architecture Notes | KeshavSoft</title>
+  <style>
+    @layer reset, base, components;
+
+    @layer reset {
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      h1, h2, h3, h4, p, ul, ol, figure, blockquote {
+        margin-block-start: 0;
+      }
+
+      pre {
+        margin: 0;
+        overflow-x: auto;
+      }
+    }
+
+    @layer base {
+      :root {
+        --bg-light: #f8fafc;
+        --bg-dark: #0b1120;
+        --surface-light: #ffffff;
+        --surface-dark: #111827;
+        --surface-subtle-light: #f1f5f9;
+        --surface-subtle-dark: #1e293b;
+        --ink-light: #0f172a;
+        --ink-dark: #f1f5f9;
+        --muted-light: #475569;
+        --muted-dark: #94a3b8;
+        --border-light: #cbd5e1;
+        --border-dark: #334155;
+        --accent-light: #0369a1;
+        --accent-dark: #38bdf8;
+        --accent-ink-light: #ffffff;
+        --accent-ink-dark: #082f49;
+        --accent-soft-light: #e0f2fe;
+        --accent-soft-dark: #0c4a6e;
+        --code-bg-light: #0f172a;
+        --code-bg-dark: #030712;
+        --code-ink: #e2e8f0;
+        --quote-border-light: #0284c7;
+        --quote-border-dark: #38bdf8;
+        --focus-light: #be123c;
+        --focus-dark: #fb7185;
+        --scrollbar-track-light: #e2e8f0;
+        --scrollbar-track-dark: #1e293b;
+        --scrollbar-thumb-light: #64748b;
+        --scrollbar-thumb-dark: #94a3b8;
+
+        --bg: var(--bg-light);
+        --surface: var(--surface-light);
+        --surface-subtle: var(--surface-subtle-light);
+        --ink: var(--ink-light);
+        --muted: var(--muted-light);
+        --border: var(--border-light);
+        --accent: var(--accent-light);
+        --accent-ink: var(--accent-ink-light);
+        --accent-soft: var(--accent-soft-light);
+        --code-bg: var(--code-bg-light);
+        --quote-border: var(--quote-border-light);
+        --focus-ring: var(--focus-light);
+        --scrollbar-track: var(--scrollbar-track-light);
+        --scrollbar-thumb: var(--scrollbar-thumb-light);
+
+        @media (prefers-color-scheme: dark) {
+          --bg: var(--bg-dark);
+          --surface: var(--surface-dark);
+          --surface-subtle: var(--surface-subtle-dark);
+          --ink: var(--ink-dark);
+          --muted: var(--muted-dark);
+          --border: var(--border-dark);
+          --accent: var(--accent-dark);
+          --accent-ink: var(--accent-ink-dark);
+          --accent-soft: var(--accent-soft-dark);
+          --code-bg: var(--code-bg-dark);
+          --quote-border: var(--quote-border-dark);
+          --focus-ring: var(--focus-dark);
+          --scrollbar-track: var(--scrollbar-track-dark);
+          --scrollbar-thumb: var(--scrollbar-thumb-dark);
+        }
+
+        @supports (color: light-dark(white, black)) {
+          --bg: light-dark(var(--bg-light), var(--bg-dark));
+          --surface: light-dark(var(--surface-light), var(--surface-dark));
+          --surface-subtle: light-dark(var(--surface-subtle-light), var(--surface-subtle-dark));
+          --ink: light-dark(var(--ink-light), var(--ink-dark));
+          --muted: light-dark(var(--muted-light), var(--muted-dark));
+          --border: light-dark(var(--border-light), var(--border-dark));
+          --accent: light-dark(var(--accent-light), var(--accent-dark));
+          --accent-ink: light-dark(var(--accent-ink-light), var(--accent-ink-dark));
+          --accent-soft: light-dark(var(--accent-soft-light), var(--accent-soft-dark));
+          --code-bg: light-dark(var(--code-bg-light), var(--code-bg-dark));
+          --quote-border: light-dark(var(--quote-border-light), var(--quote-border-dark));
+          --focus-ring: light-dark(var(--focus-light), var(--focus-dark));
+          --scrollbar-track: light-dark(var(--scrollbar-track-light), var(--scrollbar-track-dark));
+          --scrollbar-thumb: light-dark(var(--scrollbar-thumb-light), var(--scrollbar-thumb-dark));
+        }
+
+        color-scheme: light dark;
+        accent-color: var(--accent);
+        scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.65;
+      }
+
+      @supports not (scrollbar-color: auto) {
+        html::-webkit-scrollbar {
+          width: 12px;
+          height: 12px;
+        }
+        html::-webkit-scrollbar-track {
+          background: var(--scrollbar-track);
+        }
+        html::-webkit-scrollbar-thumb {
+          background: var(--scrollbar-thumb);
+        }
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        min-block-size: 100dvh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      a {
+        color: var(--accent);
+        text-underline-offset: 0.2em;
+      }
+
+      code, pre {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      code {
+        font-size: 0.9em;
+        background: var(--surface-subtle);
+        padding: 0.12em 0.38em;
+        border-radius: 4px;
+      }
+
+      pre {
+        color-scheme: dark;
+        background: var(--code-bg);
+        color: var(--code-ink);
+        padding: 1rem 1.25rem;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        font-size: 0.875rem;
+        line-height: 1.55;
+        margin-block: 1rem;
+      }
+
+      pre code {
+        background: transparent;
+        padding: 0;
+        font-size: inherit;
+        color: inherit;
+      }
+
+      :where(a:any-link, button, summary, [tabindex]):focus-visible {
+        outline: 3px solid var(--focus-ring);
+        outline-offset: 3px;
+      }
+
+      :target {
+        scroll-margin-block-start: 5rem;
+      }
+
+      @media (forced-colors: active) {
+        :root {
+          --bg: Canvas;
+          --surface: Canvas;
+          --surface-subtle: Canvas;
+          --ink: CanvasText;
+          --muted: GrayText;
+          --border: CanvasText;
+          --accent: LinkText;
+          --focus-ring: Highlight;
+        }
+      }
+    }
+
+    @layer components {
+      .visually-hidden:where(:not(:focus-within, :active)) {
+        position: absolute !important;
+        clip-path: inset(50%) !important;
+        overflow: hidden !important;
+        width: 1px !important;
+        height: 1px !important;
+        margin: -1px !important;
+        padding: 0 !important;
+        border: 0 !important;
+        white-space: nowrap !important;
+      }
+
+      .skip-link:focus-visible {
+        position: fixed;
+        inset-block-start: 0.75rem;
+        inset-inline-start: 0.75rem;
+        z-index: 100;
+        padding: 0.6rem 1rem;
+        border-radius: 8px;
+        background: var(--surface);
+        color: var(--ink);
+        border: 2px solid var(--accent);
+        font-weight: 700;
+      }
+
+      .site-header {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 20;
+        background: var(--surface);
+        border-block-end: 1px solid var(--border);
+      }
+
+      .header-inner {
+        max-inline-size: 80rem;
+        margin-inline: auto;
+        padding-inline: clamp(1rem, 3vw, 2rem);
+        min-block-size: 3.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: var(--ink);
+        text-decoration: none;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        min-block-size: 24px;
+      }
+
+      .brand-mark {
+        display: inline-grid;
+        place-items: center;
+        inline-size: 1.75rem;
+        block-size: 1.75rem;
+        border-radius: 6px;
+        background: var(--accent);
+        color: var(--accent-ink);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.85rem;
+        font-weight: 800;
+      }
+
+      .header-links {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+      }
+
+      .header-links a {
+        display: inline-flex;
+        align-items: center;
+        min-block-size: 32px;
+        padding: 0.25rem 0.65rem;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--ink);
+      }
+
+      .header-links a:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .layout {
+        flex: 1;
+        max-inline-size: 80rem;
+        inline-size: 100%;
+        margin-inline: auto;
+        padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 3vw, 2rem);
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2rem;
+        align-items: start;
+      }
+
+      @media (min-width: 60rem) {
+        .layout {
+          grid-template-columns: 16.5rem minmax(0, 1fr);
+        }
+      }
+
+      .toc-panel {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 1rem;
+      }
+
+      @media (min-width: 60rem) {
+        .toc-panel {
+          position: sticky;
+          inset-block-start: 4.75rem;
+          max-block-size: calc(100dvh - 6rem);
+          overflow-y: auto;
+        }
+      }
+
+      .toc-heading {
+        font-size: 0.78rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--muted);
+        margin-block-end: 0.75rem;
+      }
+
+      .toc-nav {
+        scroll-target-group: auto;
+      }
+
+      .toc-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 0.2rem;
+      }
+
+      .toc-list a {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        min-block-size: 32px;
+        padding: 0.35rem 0.65rem;
+        border-radius: 6px;
+        border-inline-start: 3px solid transparent;
+        color: var(--muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      .toc-list a:hover {
+        color: var(--ink);
+        background: var(--surface-subtle);
+      }
+
+      .toc-list a:is(:target-current, .target-current) {
+        color: var(--accent);
+        background: var(--accent-soft);
+        border-inline-start-color: var(--accent);
+        font-weight: 700;
+      }
+
+      .content {
+        min-inline-size: 0;
+        display: grid;
+        gap: 2rem;
+      }
+
+      .hero {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: clamp(1.25rem, 3vw, 2rem);
+      }
+
+      .eyebrow {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        margin-block-end: 0.5rem;
+      }
+
+      h1 {
+        font-size: clamp(1.75rem, 4vw, 2.5rem);
+        line-height: 1.15;
+        letter-spacing: -0.025em;
+        margin-block-end: 0.85rem;
+      }
+
+      .lead {
+        font-size: 1.08rem;
+        color: var(--muted);
+        max-inline-size: 65ch;
+      }
+
+      .core-quote {
+        margin: 1.25rem 0 1.25rem;
+        padding: 1rem 1.25rem;
+        border-inline-start: 4px solid var(--quote-border);
+        background: var(--surface-subtle);
+        border-radius: 0 10px 10px 0;
+        font-size: 1.18rem;
+        font-weight: 700;
+      }
+
+      .badge-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        list-style: none;
+        padding: 0;
+        margin: 1rem 0 0;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: var(--surface-subtle);
+      }
+
+      .doc-section {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: clamp(1.25rem, 3vw, 1.85rem);
+      }
+
+      .section-top {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 0.5rem 1rem;
+        border-block-end: 1px solid var(--border);
+        padding-block-end: 0.65rem;
+        margin-block-end: 1.15rem;
+      }
+
+      .section-top h2 {
+        font-size: clamp(1.25rem, 2.5vw, 1.55rem);
+        line-height: 1.25;
+        margin: 0;
+      }
+
+      .source-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        font-size: 0.82rem;
+      }
+
+      .source-links a {
+        padding: 0.2rem 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        text-decoration: none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      }
+
+      .source-links a:hover {
+        border-color: var(--accent);
+      }
+
+      h3 {
+        font-size: 1.08rem;
+        margin-block: 1.35rem 0.5rem;
+      }
+
+      .two-col {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+        gap: 1rem;
+        margin-block: 1rem;
+      }
+
+      .card {
+        background: var(--surface-subtle);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 1rem;
+      }
+
+      .card h3 {
+        margin-block-start: 0;
+      }
+
+      .table-wrapper {
+        overflow: auto;
+        max-inline-size: 100%;
+        max-block-size: min(540px, 75dvh);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        margin-block: 1rem;
+        container-type: inline-size;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-size: 0.92rem;
+        text-align: start;
+      }
+
+      caption {
+        padding: 0.65rem 0.9rem;
+        text-align: start;
+        font-weight: 700;
+        background: var(--surface-subtle);
+        border-block-end: 1px solid var(--border);
+      }
+
+      th, td {
+        padding: 0.6rem 0.85rem;
+        border-block-end: 1px solid var(--border);
+        vertical-align: top;
+      }
+
+      thead {
+        position: sticky;
+        inset-block-start: 0;
+        z-index: 1;
+      }
+
+      thead th {
+        background: var(--surface-subtle);
+        font-weight: 700;
+      }
+
+      tbody tr:last-child th,
+      tbody tr:last-child td {
+        border-block-end: 0;
+      }
+
+      tbody th {
+        font-weight: 600;
+        background: var(--surface);
+      }
+
+      @container (width < 600px) {
+        .table-wrapper {
+          max-block-size: none;
+          border: 0;
+        }
+
+        table, thead, tbody, tr, th, td {
+          display: block;
+        }
+
+        caption {
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          margin-block-end: 0.75rem;
+        }
+
+        thead {
+          display: none;
+        }
+
+        tr {
+          margin-block-end: 0.85rem;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          overflow: hidden;
+          background: var(--surface);
+        }
+
+        tbody th {
+          background: var(--surface-subtle);
+          border-block-end: 1px solid var(--border);
+        }
+
+        td:nth-child(2)::before {
+          content: var(--label-2) ": ";
+          font-weight: 700;
+        }
+
+        td:nth-child(3)::before {
+          content: var(--label-3) ": ";
+          font-weight: 700;
+        }
+
+        td:nth-child(4)::before {
+          content: var(--label-4) ": ";
+          font-weight: 700;
+        }
+
+        td:nth-child(5)::before {
+          content: var(--label-5) ": ";
+          font-weight: 700;
+        }
+      }
+
+      .tbl-concerns {
+        --label-2: "Question it answers";
+      }
+
+      .tbl-bundles {
+        --label-2: "Purpose";
+        --label-3: "JSONPath target";
+        --label-4: "Action";
+        --label-5: "Template";
+      }
+
+      .tbl-versions {
+        --label-2: "Version";
+      }
+
+      .tbl-glossary {
+        --label-2: "Meaning in these notes";
+      }
+
+      .tbl-source-map {
+        --label-2: "Source file (under 25-1/table/)";
+        --label-3: "What it supports";
+      }
+
+      .tbl-evidence {
+        --label-2: "Classification";
+        --label-3: "Notes";
+      }
+
+      details {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        background: var(--surface-subtle);
+        margin-block: 0.75rem;
+      }
+
+      summary {
+        cursor: pointer;
+        font-weight: 700;
+        min-block-size: 28px;
+        display: list-item;
+      }
+
+      details[open] summary {
+        margin-block-end: 0.65rem;
+      }
+
+      .file-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
+        gap: 0.75rem;
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .file-link {
+        display: block;
+        padding: 0.85rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        background: var(--surface-subtle);
+        text-decoration: none;
+        color: var(--ink);
+      }
+
+      .file-link:hover {
+        border-color: var(--accent);
+      }
+
+      .file-link strong {
+        display: block;
+        color: var(--accent);
+        margin-block-end: 0.2rem;
+      }
+
+      .file-link span {
+        font-size: 0.82rem;
+        color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        word-break: break-word;
+      }
+
+      .site-footer {
+        border-block-start: 1px solid var(--border);
+        background: var(--surface);
+        padding: 1.25rem clamp(1rem, 3vw, 2rem);
+        font-size: 0.88rem;
+        color: var(--muted);
+      }
+
+      .footer-inner {
+        max-inline-size: 80rem;
+        margin-inline: auto;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="#content" class="skip-link visually-hidden">Skip to main content</a>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="#content">
+        <span class="brand-mark" aria-hidden="true">{}</span>
+        <span>declarative-architecture-notes</span>
+      </a>
+      <nav class="header-links" aria-label="Repository links">
+        <a href="README.md">README.md</a>
+        <a href="CHANGELOG.md">CHANGELOG.md</a>
+        <a href="https://github.com/keshavsoft/declarative-architecture-notes" target="_blank" rel="noopener noreferrer">GitHub</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="toc-panel">
+      <div class="toc-heading">Contents</div>
+      <nav class="toc-nav" aria-label="On this page">
+        <ul class="toc-list">
+          <li><a href="#foundation">01 · Foundation</a></li>
+          <li><a href="#model">02 · JSON-First Model</a></li>
+          <li><a href="#construction">03 · Construction Strategies</a></li>
+          <li><a href="#instructions">04 · Instruction Lifecycle</a></li>
+          <li><a href="#mutation">05 · Mutation &amp; Bundles</a></li>
+          <li><a href="#review">06 · Source Review</a></li>
+          <li><a href="#options">07 · Design Options</a></li>
+          <li><a href="#questions">08 · Open Questions</a></li>
+          <li><a href="#glossary">09 · Glossary</a></li>
+          <li><a href="#evidence">10 · Evidence &amp; Map</a></li>
+          <li><a href="#files">All Markdown Files</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <main class="content">
+      <section class="hero">
+        <p class="eyebrow">KeshavSoft · Architecture Documentation · v0.1.0</p>
+        <h1 id="content" tabindex="-1">Declarative Architecture Notes</h1>
+        <p class="lead">
+          Standalone documentation capturing the architectural discussion on KeshavSoft's JSON-first, instruction-driven construction system alongside a static source review of the <code>25-1.zip</code> snapshot.
+        </p>
+        <blockquote class="core-quote">
+          The base is not the code. The base is the meaning.
+        </blockquote>
+        <p>
+          This site indexes and summarizes the notes without overwriting source facts or resolving open design questions prematurely. Every claim distinguishes discussion principles from static ZIP inspection.
+        </p>
+        <ul class="badge-row" aria-label="Evidence classification labels">
+          <li class="badge">Discussed principle</li>
+          <li class="badge">Verified in ZIP</li>
+          <li class="badge">Interpretation</li>
+          <li class="badge">Open question</li>
+          <li class="badge">Recommendation</li>
+        </ul>
+      </section>
+
+      <section id="foundation" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>01 · Foundation &amp; Core Principles</h2>
+          <div class="source-links">
+            <a href="01-foundation/01-executive-overview.md">01-executive-overview.md</a>
+            <a href="01-foundation/02-core-principles.md">02-core-principles.md</a>
+          </div>
+        </div>
+        <p>
+          Information and variable requirements are expressed as JSON. A stable semantic base is prepared first, and ordered instructions apply transformations or mutations to produce a presentation structure (table, list, select, datalist, or form).
+        </p>
+        <div class="two-col">
+          <div class="card">
+            <h3>7 Conceptual Layers</h3>
+            <ol>
+              <li><strong>Information / data</strong> — records and values.</li>
+              <li><strong>JSON representation</strong> — nodes, properties, children.</li>
+              <li><strong>Base</strong> — stable semantic skeleton (not code).</li>
+              <li><strong>Changes / options</strong> — collections, files, columns, tags, features.</li>
+              <li><strong>Instructions</strong> — ordered declarative steps.</li>
+              <li><strong>Transformations / actions</strong> — reusable value or tree mutators.</li>
+              <li><strong>Output / presentation</strong> — structure rendered to browser DOM.</li>
+            </ol>
+          </div>
+          <div class="card">
+            <h3>6 Core Principles</h3>
+            <ol>
+              <li><strong>JSON-first, not HTML-first</strong> — HTML is one presentation output.</li>
+              <li><strong>Stable base + variable changes</strong> — externalize changing inputs.</li>
+              <li><strong>Declarative steps</strong> — specify what, where, and which template/action.</li>
+              <li><strong>Mutation after skeleton</strong> — build once, then mutate existing regions.</li>
+              <li><strong>Construction ≠ mutation</strong> — generators vs in-place template writers.</li>
+              <li><strong>Table is an example</strong> — data lists, selects, and forms share the model.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="model" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>02 · JSON-First Model &amp; Base Separation</h2>
+          <div class="source-links">
+            <a href="02-model/01-json-first-model.md">01-json-first-model.md</a>
+            <a href="02-model/02-base-changes-construction.md">02-base-changes-construction.md</a>
+          </div>
+        </div>
+        <p>
+          Inspired by the HTML DOM tree, components are represented as JSON objects with properties and child nodes (<code>table</code>, <code>thead</code>, <code>tbody</code>, <code>tr</code>, <code>th</code>, <code>td</code>):
+        </p>
+        <pre><code>information → JSON representation → construction/transformation → presentation</code></pre>
+        <div tabindex="0" role="region" aria-labelledby="cap-concerns" class="table-wrapper">
+          <table class="tbl-concerns">
+            <caption id="cap-concerns">Conceptual separation of construction concerns</caption>
+            <thead>
+              <tr>
+                <th scope="col">Concern</th>
+                <th scope="col">Question it answers</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Base</th>
+                <td>What stable semantic structure exists?</td>
+              </tr>
+              <tr>
+                <th scope="row">Input / change data</th>
+                <td>What varies for this particular use?</td>
+              </tr>
+              <tr>
+                <th scope="row">Instruction</th>
+                <td>What ordered work should happen?</td>
+              </tr>
+              <tr>
+                <th scope="row">Selection</th>
+                <td>Where in the existing JSON tree should it happen?</td>
+              </tr>
+              <tr>
+                <th scope="row">Template / transform</th>
+                <td>What value or structure should be created?</td>
+              </tr>
+              <tr>
+                <th scope="row">Mutation action</th>
+                <td>How should the destination be changed?</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="construction" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>03 · Two Row/Column Construction Strategies</h2>
+          <div class="source-links">
+            <a href="03-construction/01-row-column-strategies.md">01-row-column-strategies.md</a>
+          </div>
+        </div>
+        <p>
+          Header and body use separate construction logic. In <code>declarative-instructions/src/v2/instructions.json</code>, <code>buildHeader</code> and <code>buildFooter</code> are <code>single</code> instructions using <code>fromCollection</code> over <code>$.columns</code>, while body/select/datalist use two-dimensional strategies:
+        </p>
+        <div class="two-col">
+          <div class="card">
+            <h3>Strategy A — <code>rowOnColumn</code></h3>
+            <p>Iterate records, create each <code>tr</code>, populate its cells across <code>columns</code>, and append to <code>tbody</code>.</p>
+            <p><strong>Verified in ZIP:</strong> used by <code>buildBody</code> with <code>buildBodyTr</code> and <code>buildBodyCell</code>.</p>
+          </div>
+          <div class="card">
+            <h3>Strategy B — <code>columnOnRow</code></h3>
+            <p>Establish rows first, then iterate columns to insert cells into existing rows in a second phase.</p>
+            <p><strong>Verified in ZIP:</strong> used by <code>buildSelectWithOptions</code> and <code>buildDataListWithOptions</code>.</p>
+          </div>
+        </div>
+        <p><strong>Status:</strong> No universal winner has been selected pending comparative evaluation of ordering, mapping, and performance.</p>
+      </section>
+
+      <section id="instructions" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>04 · Instruction Execution Lifecycle</h2>
+          <div class="source-links">
+            <a href="04-instructions/01-instruction-lifecycle.md">01-instruction-lifecycle.md</a>
+          </div>
+        </div>
+        <p>
+          Verified in <code>json-renderers-run-instructions/src/v20/index.js</code> and <code>src/v20/instructions/index.js</code>:
+        </p>
+        <ol>
+          <li>Look up <code>definitions[instructionMainKey]?.[instructionSubKey]</code>.</li>
+          <li>Obtain <code>spec[definition.baseFromSpec]</code> and clone it with <code>structuredClone</code>.</li>
+          <li>Normalize modern grouped options and legacy <code>show*</code> aliases (<code>showSearch</code>, <code>showSerial</code>, <code>showOptions</code>) into ordered, deduplicated instruction keys.</li>
+          <li>Create shared mutable state <code>{ base, data }</code> and execute steps in order.</li>
+          <li>Dispatch arrays via <code>executeWriteBundle</code> (checking <code>skipIf</code>, cloning templates, calling <code>writePath</code>) and objects via <code>executeBuildInstruction</code> (<code>single</code>, <code>rowOnColumn</code>, <code>columnOnRow</code>).</li>
+          <li>Return the mutated <code>state.base</code> for conversion via <code>@keshavsoft/json-to-dom</code> in table renderer V58.</li>
+        </ol>
+      </section>
+
+      <section id="mutation" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>05 · Mutation, Destination Resolution &amp; Bundles</h2>
+          <div class="source-links">
+            <a href="05-mutation/01-how-mutations-work.md">01-how-mutations-work.md</a>
+            <a href="05-mutation/02-serial-and-options-columns.md">02-serial-and-options-columns.md</a>
+          </div>
+        </div>
+        <p>
+          <code>json-write-path/src/v6/resolveParent.js</code> separates <strong>selection</strong> (one JSONPath match via <code>jsonpathly</code>, or legacy <code>dataRole</code> via <code>findByRole</code>), <strong>path resolution</strong> (final <code>filePath</code> key + parent object), and <strong>action execution</strong> (e.g., <code>set</code>, <code>push</code>, <code>unshift</code>, or row-aware actions from <code>src/v4/actions/rows.js</code>: <code>pushToRows</code>, <code>unshiftToRows</code>, <code>unshiftSerialToRows</code>).
+        </p>
+
+        <div tabindex="0" role="region" aria-labelledby="cap-serial" class="table-wrapper">
+          <table class="tbl-bundles">
+            <caption id="cap-serial">Serial feature bundle (declarative-instructions V2)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Purpose</th>
+                <th scope="col">JSONPath target</th>
+                <th scope="col">Action</th>
+                <th scope="col">Template</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">1</th>
+                <td>Prepend serial column width</td>
+                <td><code>table-colgroup</code></td>
+                <td><code>unshift</code></td>
+                <td><code>colGroupForSerial</code></td>
+              </tr>
+              <tr>
+                <th scope="row">2</th>
+                <td>Prepend serial header cell</td>
+                <td><code>table-header-row</code></td>
+                <td><code>unshift</code></td>
+                <td><code>headerSerialCell</code></td>
+              </tr>
+              <tr>
+                <th scope="row">3</th>
+                <td>Prepend serial cell into each body row</td>
+                <td><code>table-body</code></td>
+                <td><code>unshiftSerialToRows</code></td>
+                <td><code>buildBodyCell</code></td>
+              </tr>
+              <tr>
+                <th scope="row">4</th>
+                <td>Prepend serial footer cell</td>
+                <td><code>table-footer-row</code></td>
+                <td><code>unshift</code></td>
+                <td><code>headerSerialCell</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div tabindex="0" role="region" aria-labelledby="cap-options" class="table-wrapper">
+          <table class="tbl-bundles">
+            <caption id="cap-options">Options button bundle (options-show-button, V2)</caption>
+            <thead>
+              <tr>
+                <th scope="col">Step</th>
+                <th scope="col">Purpose</th>
+                <th scope="col">JSONPath target</th>
+                <th scope="col">Action</th>
+                <th scope="col">Template</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">1</th>
+                <td>Append options column width</td>
+                <td><code>table-colgroup</code></td>
+                <td><code>push</code></td>
+                <td><code>colGroupForOption</code></td>
+              </tr>
+              <tr>
+                <th scope="row">2</th>
+                <td>Append options header cell</td>
+                <td><code>table-header-row</code></td>
+                <td><code>push</code></td>
+                <td><code>headerForOption</code></td>
+              </tr>
+              <tr>
+                <th scope="row">3</th>
+                <td>Append options button cell to every body row</td>
+                <td><code>table-body</code></td>
+                <td><code>pushToRows</code></td>
+                <td><code>optionsButtonCell</code></td>
+              </tr>
+              <tr>
+                <th scope="row">4</th>
+                <td>Append options footer cell</td>
+                <td><code>table-footer-row</code></td>
+                <td><code>push</code></td>
+                <td><code>tdWithButtonSaveWarning</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          <code>options-show-edit-button</code> and <code>options-show-delete-button</code> follow the same four-region pattern using <code>emptyCell</code> in the footer.
+        </p>
+      </section>
+
+      <section id="review" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>06 · Verified Source Review &amp; Migration Status</h2>
+          <div class="source-links">
+            <a href="06-codebase-review/01-verified-findings.md">01-verified-findings.md</a>
+            <a href="06-codebase-review/02-find-by-role-and-jsonpathly.md">02-find-by-role-and-jsonpathly.md</a>
+          </div>
+        </div>
+        <p>
+          Static inspection of <code>25-1.zip</code> confirms that <strong>JSONPathly</strong> is the primary destination-selection mechanism for <code>path.jsonPath</code>, while <code>findByRole</code> (from <code>json-transformer-funcs</code>) remains active as a backward-compatibility fallback in <code>json-write-path</code> V6 when <code>path.dataRole</code> is supplied without <code>path.jsonPath</code>. Focused transformation packages (primitive, 1D, 2D) are imported directly by the V20 runner and remain active.
+        </p>
+        <div tabindex="0" role="region" aria-labelledby="cap-versions" class="table-wrapper">
+          <table class="tbl-versions">
+            <caption id="cap-versions">Snapshot package versions inspected in 25-1.zip</caption>
+            <thead>
+              <tr>
+                <th scope="col">Package</th>
+                <th scope="col">Version</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row"><code>json-renderers-run-instructions</code></th><td>1.20.1</td></tr>
+              <tr><th scope="row"><code>json-write-path</code></th><td>1.6.1</td></tr>
+              <tr><th scope="row"><code>declarative-instructions</code></th><td>1.2.3</td></tr>
+              <tr><th scope="row"><code>declarative-definitions</code></th><td>1.3.1</td></tr>
+              <tr><th scope="row"><code>declarative-spec</code></th><td>1.4.1</td></tr>
+              <tr><th scope="row"><code>jsonpathly</code></th><td>4.0.0</td></tr>
+              <tr><th scope="row"><code>json-transformer-funcs</code></th><td>1.24.8</td></tr>
+              <tr><th scope="row"><code>json-transformer-funcs-primitive</code></th><td>1.10.3</td></tr>
+              <tr><th scope="row"><code>json-transformer-funcs-one-dimension</code></th><td>1.9.9</td></tr>
+              <tr><th scope="row"><code>json-transformer-funcs-two-dimensions</code></th><td>Not independently confirmed in review table</td></tr>
+              <tr><th scope="row"><code>json-renderers-build-table</code></th><td>1.58.1</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="options" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>07 · Design Options</h2>
+          <div class="source-links">
+            <a href="07-design-options/01-rebuild-vs-incremental-update.md">01-rebuild-vs-incremental-update.md</a>
+            <a href="07-design-options/02-json-validity-and-contract.md">02-json-validity-and-contract.md</a>
+          </div>
+        </div>
+        <div class="two-col">
+          <div class="card">
+            <h3>Rebuild vs. Incremental Update</h3>
+            <p><strong>Option A (Rebuild from base):</strong> Clone clean base, rerun instructions with latest data/options, replace output. Deterministic and simpler baseline.</p>
+            <p><strong>Option B (Incremental mutation):</strong> Diff old/new records, target affected nodes, preserve UI state—requires stable record identity and reconciliation semantics.</p>
+          </div>
+          <div class="card">
+            <h3>Four Levels of “Valid JSON”</h3>
+            <ol>
+              <li><strong>Syntactic:</strong> parseable JSON syntax.</li>
+              <li><strong>Structural:</strong> expected node shape, properties, children.</li>
+              <li><strong>Semantic:</strong> recognized component regions (e.g., <code>table-body</code>).</li>
+              <li><strong>Executable:</strong> referenced definitions, instructions, templates, and paths resolve cleanly.</li>
+            </ol>
+          </div>
+        </div>
+      </section>
+
+      <section id="questions" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>08 · Open Questions (26 Unresolved Topics)</h2>
+          <div class="source-links">
+            <a href="08-open-questions/01-open-questions.md">01-open-questions.md</a>
+          </div>
+        </div>
+        <p>
+          Next recommended discussion: formalizing the JSON node contract and the boundary between semantic base and presentation spec.
+        </p>
+        <details>
+          <summary>Expand all 26 open questions across categories A–F</summary>
+          <h3>A. JSON model and meaning</h3>
+          <ol start="1">
+            <li>What exact JSON shape is considered a valid node in the platform?</li>
+            <li>Which properties are universal node properties, and which are element-specific?</li>
+            <li>Is the JSON model intended to represent only DOM-like output nodes, or broader application meaning as well?</li>
+            <li>What is the boundary between semantic base and presentation-specific spec?</li>
+          </ol>
+          <h3>B. Base and external changes</h3>
+          <ol start="5">
+            <li>Which parts of a component must always exist in the base?</li>
+            <li>Which features must always be external data/options?</li>
+            <li>Can a base be shared by multiple presentation renderers?</li>
+            <li>Is the base immutable after cloning, or is mutation the intended normal execution model?</li>
+          </ol>
+          <h3>C. Construction strategies</h3>
+          <ol start="9">
+            <li>What are the exact semantics of <code>rowOnColumn</code> and <code>columnOnRow</code> in the two-dimensional package?</li>
+            <li>Which strategy is best for table body construction, and under what conditions?</li>
+            <li>How should header, body, and footer construction differ?</li>
+            <li>Can a single column-oriented instruction consistently handle header, body, and footer, or should these remain distinct steps?</li>
+          </ol>
+          <h3>D. Instruction and mutation model</h3>
+          <ol start="13">
+            <li>What is the formal contract for an instruction: type, sourcePath, destinationPath, templateKey, func, action, skipIf, narration?</li>
+            <li>Should instructions be declarative only, or may an action contain specialized imperative behavior?</li>
+            <li>How are ordering dependencies represented and validated?</li>
+            <li>Should every destination JSONPath resolve to exactly one node, or should some instruction types explicitly support many matches?</li>
+            <li>Should row-aware actions remain custom write-path actions, or become first-class instruction types?</li>
+          </ol>
+          <h3>E. Runtime lifecycle</h3>
+          <ol start="18">
+            <li>When data changes, should the system rebuild from the original base or incrementally reconcile the existing tree?</li>
+            <li>How should stable row identity be represented?</li>
+            <li>How should sorting, filtering, pagination, and row insertion interact with serial numbers?</li>
+            <li>How should mutations preserve UI state and event bindings when DOM is re-rendered?</li>
+          </ol>
+          <h3>F. Compatibility and package lifecycle</h3>
+          <ol start="22">
+            <li>Can all active <code>dataRole</code> destinations be migrated to JSONPath?</li>
+            <li>Is <code>findByRole</code> still required for any supported consumer?</li>
+            <li>Which focused transformation packages are current public contracts?</li>
+            <li>What is the compatibility matrix among definitions, instructions, spec, runner, write-path, and renderer versions?</li>
+            <li>Which historical versions are supported, and which are archival only?</li>
+          </ol>
+        </details>
+      </section>
+
+      <section id="glossary" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>09 · Glossary</h2>
+          <div class="source-links">
+            <a href="09-glossary/README.md">09-glossary/README.md</a>
+          </div>
+        </div>
+        <div tabindex="0" role="region" aria-labelledby="cap-glossary" class="table-wrapper">
+          <table class="tbl-glossary">
+            <caption id="cap-glossary">Key terminology used across the documentation</caption>
+            <thead>
+              <tr>
+                <th scope="col">Term</th>
+                <th scope="col">Meaning in these notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Base</th><td>Stable semantic structure from which a component run begins. Not source code.</td></tr>
+              <tr><th scope="row">Change</th><td>External or variable requirement supplied as data/options.</td></tr>
+              <tr><th scope="row">JSON node</th><td>An object representing a node in the JSON tree, with properties and possibly children.</td></tr>
+              <tr><th scope="row">Spec</th><td>Repository/package of reusable base structures and templates used by instructions.</td></tr>
+              <tr><th scope="row">Definition</th><td>Component-level declaration that selects a base spec and required instructions.</td></tr>
+              <tr><th scope="row">Instruction</th><td>Declarative unit describing a build or write/mutation step.</td></tr>
+              <tr><th scope="row">Instruction bundle</th><td>Ordered array of write steps grouped under one instruction key.</td></tr>
+              <tr><th scope="row">Template</th><td>Reusable JSON fragment used to create or insert a structure.</td></tr>
+              <tr><th scope="row">Selection</th><td>Finding a node in a JSON tree, here commonly with JSONPathly.</td></tr>
+              <tr><th scope="row">Destination path</th><td>The selected target plus a property path describing where the write occurs.</td></tr>
+              <tr><th scope="row">Mutation action</th><td>Operation such as set, push, unshift, or row-aware insertion.</td></tr>
+              <tr><th scope="row"><code>rowOnColumn</code></th><td>Instruction type dispatched to the two-dimensional transformation package.</td></tr>
+              <tr><th scope="row"><code>columnOnRow</code></th><td>Instruction type dispatched to the two-dimensional transformation package.</td></tr>
+              <tr><th scope="row"><code>findByRole</code></th><td>Legacy role-based node lookup retained as a <code>dataRole</code> fallback in write-path V6.</td></tr>
+              <tr><th scope="row">JSONPathly</th><td>Query library used to select nodes in JSON trees.</td></tr>
+              <tr><th scope="row">DOM</th><td>Browser Document Object Model; inspiration for the tree-like JSON representation.</td></tr>
+              <tr><th scope="row">Presentation</th><td>The rendered form shown to a user, such as a table, list, or select.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="evidence" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>10 · Source Map &amp; Discussion vs. Evidence</h2>
+          <div class="source-links">
+            <a href="10-evidence/01-source-map.md">01-source-map.md</a>
+            <a href="10-evidence/02-discussion-vs-code.md">02-discussion-vs-code.md</a>
+          </div>
+        </div>
+        <div tabindex="0" role="region" aria-labelledby="cap-evidence" class="table-wrapper">
+          <table class="tbl-evidence">
+            <caption id="cap-evidence">Discussion claims compared with static ZIP evidence</caption>
+            <thead>
+              <tr>
+                <th scope="col">Statement</th>
+                <th scope="col">Classification</th>
+                <th scope="col">Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Base is meaning/stable structure, not code</th><td>Discussed principle</td><td>Explicitly stated by the user</td></tr>
+              <tr><th scope="row">External changes represented as data</th><td>Discussed principle</td><td>Data, files/collections, columns, tags, options</td></tr>
+              <tr><th scope="row">JSON preferred over HTML as source</th><td>Discussed principle</td><td>HTML is viewed as one presentation method</td></tr>
+              <tr><th scope="row">DOM tree inspired the JSON model</th><td>Discussed principle</td><td>User studied the DOM representation and adapted it</td></tr>
+              <tr><th scope="row">Header and body use separate logic</th><td>Discussed + source support</td><td>Header/footer use <code>single</code>; body uses <code>rowOnColumn</code></td></tr>
+              <tr><th scope="row">Two practical row/column strategies exist</th><td>Discussed principle</td><td>Comparative evaluation remains open</td></tr>
+              <tr><th scope="row">V20 shares one mutable base per run</th><td>Verified in ZIP</td><td><code>state = { base, data }</code> passed through sequence</td></tr>
+              <tr><th scope="row">JSONPath identifies write target</th><td>Verified in ZIP</td><td><code>json-write-path</code> V6 uses JSONPathly for <code>jsonPath</code></td></tr>
+              <tr><th scope="row"><code>filePath</code> identifies property/parent</th><td>Verified in ZIP</td><td><code>resolveParent.js</code> resolves parent and final key</td></tr>
+              <tr><th scope="row">Action performs mutation</th><td>Verified in ZIP</td><td><code>writePath</code> selects action registry entry or default <code>set</code></td></tr>
+              <tr><th scope="row"><code>findByRole</code> is completely unused</th><td>Not supported</td><td>V6 still has a <code>dataRole</code> fallback</td></tr>
+              <tr><th scope="row">Options &amp; serial features have 4 steps</th><td>Verified in ZIP</td><td><code>options-show-button</code> and <code>serial</code> arrays in V2</td></tr>
+              <tr><th scope="row">Data changes trigger incremental update</th><td>Open question</td><td>Not established by the source review</td></tr>
+              <tr><th scope="row">JSON syntax alone is enough for validity</th><td>Not established</td><td>Formal system contract remains open</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <details>
+          <summary>Expand full source map (14 source references under 25-1/table/)</summary>
+          <div tabindex="0" role="region" aria-labelledby="cap-srcmap" class="table-wrapper">
+            <table class="tbl-source-map">
+              <caption id="cap-srcmap">Source files supporting claims in this repository</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Topic</th>
+                  <th scope="col">Source file (under 25-1/table/)</th>
+                  <th scope="col">What it supports</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">Package versions</th><td>Each package's <code>package.json</code></td><td>Snapshot package versions</td></tr>
+                <tr><th scope="row">Runner entry</th><td><code>json-renderers-run-instructions/src/v20/index.js</code></td><td>Definition lookup, base clone, option steps, sequence assembly</td></tr>
+                <tr><th scope="row">Sequence execution</th><td><code>json-renderers-run-instructions/src/v20/instructions/index.js</code></td><td>Shared state and ordered execution</td></tr>
+                <tr><th scope="row">Build dispatch</th><td><code>json-renderers-run-instructions/src/v20/instructions/executeBuildInstruction.js</code></td><td><code>single</code>, <code>rowOnColumn</code>, <code>columnOnRow</code> dispatch</td></tr>
+                <tr><th scope="row">Write bundle</th><td><code>json-renderers-run-instructions/src/v20/instructions/executeWriteBundle.js</code></td><td>Ordered mutation steps, <code>skipIf</code>, template lookup</td></tr>
+                <tr><th scope="row">Destination existence</th><td><code>json-renderers-run-instructions/src/v20/instructions/writeResult.js</code></td><td>JSONPath destination check and result writing</td></tr>
+                <tr><th scope="row">Source resolution</th><td><code>json-renderers-run-instructions/src/v20/instructions/resolveSource.js</code></td><td>Source JSONPath/filePath resolution</td></tr>
+                <tr><th scope="row">Options normalization</th><td><code>json-renderers-run-instructions/src/v20/runOptions/normalizeOptions.js</code></td><td>Modern options and legacy <code>show*</code> aliases</td></tr>
+                <tr><th scope="row">Feature keys</th><td><code>json-renderers-run-instructions/src/v20/runOptions/resolveFeatureKeys.js</code></td><td>Feature-to-instruction mapping</td></tr>
+                <tr><th scope="row">Table renderer</th><td><code>json-renderers-build-table/src/v58/index.js</code></td><td>Config parsing, options normalization, runner call, JSON-to-DOM</td></tr>
+                <tr><th scope="row">Instruction definitions</th><td><code>declarative-instructions/src/v2/instructions.json</code></td><td>Table, serial, options, select, data-list declarations</td></tr>
+                <tr><th scope="row">Destination resolution</th><td><code>json-write-path/src/v6/resolveParent.js</code></td><td>JSONPath selection, legacy <code>dataRole</code> fallback, <code>filePath</code> parent/key</td></tr>
+                <tr><th scope="row">Mutation dispatch</th><td><code>json-write-path/src/v6/index.js</code></td><td>Action selection and invocation</td></tr>
+                <tr><th scope="row">Row-aware actions</th><td><code>json-write-path/src/v4/actions/rows.js</code></td><td><code>pushToRows</code>, <code>unshiftToRows</code>, <code>unshiftSerialToRows</code></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section id="files" class="doc-section" tabindex="-1">
+        <div class="section-top">
+          <h2>All Repository Markdown Files</h2>
+        </div>
+        <ul class="file-grid">
+          <li><a class="file-link" href="README.md"><strong>Repository Guide</strong><span>README.md</span></a></li>
+          <li><a class="file-link" href="CHANGELOG.md"><strong>Changelog (0.1.0)</strong><span>CHANGELOG.md</span></a></li>
+          <li><a class="file-link" href="01-foundation/01-executive-overview.md"><strong>Executive Overview</strong><span>01-foundation/01-executive-overview.md</span></a></li>
+          <li><a class="file-link" href="01-foundation/02-core-principles.md"><strong>Core Principles</strong><span>01-foundation/02-core-principles.md</span></a></li>
+          <li><a class="file-link" href="02-model/01-json-first-model.md"><strong>JSON-First Model</strong><span>02-model/01-json-first-model.md</span></a></li>
+          <li><a class="file-link" href="02-model/02-base-changes-construction.md"><strong>Base, Changes &amp; Construction</strong><span>02-model/02-base-changes-construction.md</span></a></li>
+          <li><a class="file-link" href="03-construction/01-row-column-strategies.md"><strong>Row &amp; Column Strategies</strong><span>03-construction/01-row-column-strategies.md</span></a></li>
+          <li><a class="file-link" href="04-instructions/01-instruction-lifecycle.md"><strong>Instruction Lifecycle</strong><span>04-instructions/01-instruction-lifecycle.md</span></a></li>
+          <li><a class="file-link" href="05-mutation/01-how-mutations-work.md"><strong>How Mutations Work</strong><span>05-mutation/01-how-mutations-work.md</span></a></li>
+          <li><a class="file-link" href="05-mutation/02-serial-and-options-columns.md"><strong>Serial &amp; Options Columns</strong><span>05-mutation/02-serial-and-options-columns.md</span></a></li>
+          <li><a class="file-link" href="06-codebase-review/01-verified-findings.md"><strong>Verified Findings</strong><span>06-codebase-review/01-verified-findings.md</span></a></li>
+          <li><a class="file-link" href="06-codebase-review/02-find-by-role-and-jsonpathly.md"><strong>findByRole &amp; JSONPathly</strong><span>06-codebase-review/02-find-by-role-and-jsonpathly.md</span></a></li>
+          <li><a class="file-link" href="07-design-options/01-rebuild-vs-incremental-update.md"><strong>Rebuild vs Incremental</strong><span>07-design-options/01-rebuild-vs-incremental-update.md</span></a></li>
+          <li><a class="file-link" href="07-design-options/02-json-validity-and-contract.md"><strong>JSON Validity &amp; Contract</strong><span>07-design-options/02-json-validity-and-contract.md</span></a></li>
+          <li><a class="file-link" href="08-open-questions/01-open-questions.md"><strong>Open Questions</strong><span>08-open-questions/01-open-questions.md</span></a></li>
+          <li><a class="file-link" href="09-glossary/README.md"><strong>Glossary</strong><span>09-glossary/README.md</span></a></li>
+          <li><a class="file-link" href="10-evidence/01-source-map.md"><strong>Source Map</strong><span>10-evidence/01-source-map.md</span></a></li>
+          <li><a class="file-link" href="10-evidence/02-discussion-vs-code.md"><strong>Discussion vs Code</strong><span>10-evidence/02-discussion-vs-code.md</span></a></li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span><strong>declarative-architecture-notes</strong> · The base is not the code. The base is the meaning.</span>
+      <span>KeshavSoft · Static source review of <code>25-1.zip</code></span>
+    </div>
+  </footer>
+
+  <script type="module">
+    const navSelector = '.toc-nav a';
+    const sectionSelector = 'main section[id]';
+
+    if (CSS.supports('scroll-target-group: auto')) {
+      const syncAriaCurrent = () => {
+        const currentLink = document.querySelector(`${navSelector}:target-current`);
+        document.querySelectorAll(navSelector).forEach((link) => {
+          if (link === currentLink) {
+            link.setAttribute('aria-current', 'true');
+          } else {
+            link.removeAttribute('aria-current');
+          }
+        });
+      };
+      syncAriaCurrent();
+      document.addEventListener('scrollend', syncAriaCurrent);
+    } else {
+      const navLinks = document.querySelectorAll(navSelector);
+      const sections = document.querySelectorAll(sectionSelector);
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.getAttribute('id');
+            navLinks.forEach((link) => {
+              const isActive = link.getAttribute('href') === `#${id}`;
+              link.classList.toggle('target-current', isActive);
+              if (isActive) {
+                link.setAttribute('aria-current', 'true');
+              } else {
+                link.removeAttribute('aria-current');
+              }
+            });
+          }
+        });
+      }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
+      sections.forEach((section) => observer.observe(section));
+    }
+  </script>
+</body>
+</html>
