@@ -10,9 +10,7 @@
     @layer reset, base, components;
 
     @layer reset {
-      *,
-      *::before,
-      *::after {
+      :where(html, body, header, nav, aside, main, section, footer, div, table, th, td, pre, details, summary, blockquote, ul, ol, li, a) {
         box-sizing: border-box;
       }
 
