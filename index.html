@@ -313,7 +313,7 @@
 
       @media (min-width: 60rem) {
         .layout {
-          grid-template-columns: 16.5rem minmax(0, 1fr);
+          grid-template-columns: 18.5rem minmax(0, 1fr);
         }
       }
 
@@ -351,10 +351,10 @@
         margin: 0;
         padding: 0;
         display: grid;
-        gap: 0.2rem;
+        gap: 0.25rem;
       }
 
-      .toc-list a {
+      .toc-list > li > a {
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -362,21 +362,44 @@
         padding: 0.35rem 0.65rem;
         border-radius: 6px;
         border-inline-start: 3px solid transparent;
-        color: var(--muted);
+        color: var(--ink);
         text-decoration: none;
         font-size: 0.9rem;
+        font-weight: 600;
       }
 
       .toc-list a:hover {
-        color: var(--ink);
+        color: var(--accent);
         background: var(--surface-subtle);
       }
 
-      .toc-list a:is(:target-current, .target-current) {
+      .toc-list > li > a:is(:target-current, .target-current) {
         color: var(--accent);
         background: var(--accent-soft);
         border-inline-start-color: var(--accent);
         font-weight: 700;
+      }
+
+      .toc-sublist {
+        list-style: none;
+        margin: 0.15rem 0 0.35rem 0.75rem;
+        padding: 0 0 0 0.65rem;
+        border-inline-start: 1px solid var(--border);
+        display: grid;
+        gap: 0.15rem;
+      }
+
+      .toc-sublist a {
+        display: block;
+        min-block-size: 28px;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        color: var(--muted);
+        text-decoration: none;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.78rem;
+        line-height: 1.4;
+        word-break: break-word;
       }
 
       .content {
@@ -666,40 +689,75 @@
         margin-block-end: 0.65rem;
       }
 
-      .file-grid {
+      .folder-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
-        gap: 0.75rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 17.5rem), 1fr));
+        gap: 0.9rem;
         list-style: none;
         padding: 0;
         margin: 0;
       }
 
-      .file-link {
-        display: block;
-        padding: 0.85rem 1rem;
+      .folder-card {
+        padding: 1rem;
         border: 1px solid var(--border);
         border-radius: 10px;
         background: var(--surface-subtle);
-        text-decoration: none;
-        color: var(--ink);
       }
 
-      .file-link:hover {
-        border-color: var(--accent);
+      .folder-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        padding-block-end: 0.5rem;
+        margin-block-end: 0.6rem;
+        border-block-end: 1px solid var(--border);
       }
 
-      .file-link strong {
-        display: block;
-        color: var(--accent);
-        margin-block-end: 0.2rem;
-      }
-
-      .file-link span {
-        font-size: 0.82rem;
-        color: var(--muted);
+      .folder-head a:first-child {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-weight: 700;
+        font-size: 0.92rem;
+        color: var(--ink);
+        text-decoration: none;
+      }
+
+      .folder-head a:first-child:hover {
+        color: var(--accent);
+        text-decoration: underline;
+      }
+
+      .folder-gh {
+        font-size: 0.76rem;
+        padding: 0.15rem 0.45rem;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        text-decoration: none;
+      }
+
+      .folder-files {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: grid;
+        gap: 0.4rem;
+      }
+
+      .folder-files a {
+        display: block;
+        min-block-size: 28px;
+        padding: 0.25rem 0.4rem;
+        border-radius: 6px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.83rem;
+        text-decoration: none;
         word-break: break-word;
+      }
+
+      .folder-files a:hover {
+        background: var(--surface);
+        text-decoration: underline;
       }
 
       .site-footer {
@@ -740,20 +798,82 @@
 
   <div class="layout">
     <aside class="toc-panel">
-      <div class="toc-heading">Contents</div>
-      <nav class="toc-nav" aria-label="On this page">
+      <div class="toc-heading">Folders &amp; Markdown</div>
+      <nav class="toc-nav" aria-label="Folders and sections">
         <ul class="toc-list">
-          <li><a href="#foundation">01 · Foundation</a></li>
-          <li><a href="#model">02 · JSON-First Model</a></li>
-          <li><a href="#construction">03 · Construction Strategies</a></li>
-          <li><a href="#instructions">04 · Instruction Lifecycle</a></li>
-          <li><a href="#mutation">05 · Mutation &amp; Bundles</a></li>
-          <li><a href="#review">06 · Source Review</a></li>
-          <li><a href="#options">07 · Design Options</a></li>
-          <li><a href="#questions">08 · Open Questions</a></li>
-          <li><a href="#glossary">09 · Glossary</a></li>
-          <li><a href="#evidence">10 · Evidence &amp; Map</a></li>
-          <li><a href="#files">All Markdown Files</a></li>
+          <li>
+            <a href="#foundation">01-foundation/</a>
+            <ul class="toc-sublist">
+              <li><a href="01-foundation/01-executive-overview.md">01-executive-overview.md</a></li>
+              <li><a href="01-foundation/02-core-principles.md">02-core-principles.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#model">02-model/</a>
+            <ul class="toc-sublist">
+              <li><a href="02-model/01-json-first-model.md">01-json-first-model.md</a></li>
+              <li><a href="02-model/02-base-changes-construction.md">02-base-changes-construction.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#construction">03-construction/</a>
+            <ul class="toc-sublist">
+              <li><a href="03-construction/01-row-column-strategies.md">01-row-column-strategies.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#instructions">04-instructions/</a>
+            <ul class="toc-sublist">
+              <li><a href="04-instructions/01-instruction-lifecycle.md">01-instruction-lifecycle.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#mutation">05-mutation/</a>
+            <ul class="toc-sublist">
+              <li><a href="05-mutation/01-how-mutations-work.md">01-how-mutations-work.md</a></li>
+              <li><a href="05-mutation/02-serial-and-options-columns.md">02-serial-and-options-columns.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#review">06-codebase-review/</a>
+            <ul class="toc-sublist">
+              <li><a href="06-codebase-review/01-verified-findings.md">01-verified-findings.md</a></li>
+              <li><a href="06-codebase-review/02-find-by-role-and-jsonpathly.md">02-find-by-role-and-jsonpathly.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#options">07-design-options/</a>
+            <ul class="toc-sublist">
+              <li><a href="07-design-options/01-rebuild-vs-incremental-update.md">01-rebuild-vs-incremental-update.md</a></li>
+              <li><a href="07-design-options/02-json-validity-and-contract.md">02-json-validity-and-contract.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#questions">08-open-questions/</a>
+            <ul class="toc-sublist">
+              <li><a href="08-open-questions/01-open-questions.md">01-open-questions.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#glossary">09-glossary/</a>
+            <ul class="toc-sublist">
+              <li><a href="09-glossary/README.md">09-glossary/README.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#evidence">10-evidence/</a>
+            <ul class="toc-sublist">
+              <li><a href="10-evidence/01-source-map.md">01-source-map.md</a></li>
+              <li><a href="10-evidence/02-discussion-vs-code.md">02-discussion-vs-code.md</a></li>
+            </ul>
+          </li>
+          <li>
+            <a href="#files">Root &amp; All Files</a>
+            <ul class="toc-sublist">
+              <li><a href="README.md">README.md</a></li>
+              <li><a href="CHANGELOG.md">CHANGELOG.md</a></li>
+            </ul>
+          </li>
         </ul>
       </nav>
     </aside>
@@ -1253,27 +1373,115 @@
 
       <section id="files" class="doc-section" tabindex="-1">
         <div class="section-top">
-          <h2>All Repository Markdown Files</h2>
+          <h2>All Folders &amp; Markdown Files</h2>
         </div>
-        <ul class="file-grid">
-          <li><a class="file-link" href="README.md"><strong>Repository Guide</strong><span>README.md</span></a></li>
-          <li><a class="file-link" href="CHANGELOG.md"><strong>Changelog (0.1.0)</strong><span>CHANGELOG.md</span></a></li>
-          <li><a class="file-link" href="01-foundation/01-executive-overview.md"><strong>Executive Overview</strong><span>01-foundation/01-executive-overview.md</span></a></li>
-          <li><a class="file-link" href="01-foundation/02-core-principles.md"><strong>Core Principles</strong><span>01-foundation/02-core-principles.md</span></a></li>
-          <li><a class="file-link" href="02-model/01-json-first-model.md"><strong>JSON-First Model</strong><span>02-model/01-json-first-model.md</span></a></li>
-          <li><a class="file-link" href="02-model/02-base-changes-construction.md"><strong>Base, Changes &amp; Construction</strong><span>02-model/02-base-changes-construction.md</span></a></li>
-          <li><a class="file-link" href="03-construction/01-row-column-strategies.md"><strong>Row &amp; Column Strategies</strong><span>03-construction/01-row-column-strategies.md</span></a></li>
-          <li><a class="file-link" href="04-instructions/01-instruction-lifecycle.md"><strong>Instruction Lifecycle</strong><span>04-instructions/01-instruction-lifecycle.md</span></a></li>
-          <li><a class="file-link" href="05-mutation/01-how-mutations-work.md"><strong>How Mutations Work</strong><span>05-mutation/01-how-mutations-work.md</span></a></li>
-          <li><a class="file-link" href="05-mutation/02-serial-and-options-columns.md"><strong>Serial &amp; Options Columns</strong><span>05-mutation/02-serial-and-options-columns.md</span></a></li>
-          <li><a class="file-link" href="06-codebase-review/01-verified-findings.md"><strong>Verified Findings</strong><span>06-codebase-review/01-verified-findings.md</span></a></li>
-          <li><a class="file-link" href="06-codebase-review/02-find-by-role-and-jsonpathly.md"><strong>findByRole &amp; JSONPathly</strong><span>06-codebase-review/02-find-by-role-and-jsonpathly.md</span></a></li>
-          <li><a class="file-link" href="07-design-options/01-rebuild-vs-incremental-update.md"><strong>Rebuild vs Incremental</strong><span>07-design-options/01-rebuild-vs-incremental-update.md</span></a></li>
-          <li><a class="file-link" href="07-design-options/02-json-validity-and-contract.md"><strong>JSON Validity &amp; Contract</strong><span>07-design-options/02-json-validity-and-contract.md</span></a></li>
-          <li><a class="file-link" href="08-open-questions/01-open-questions.md"><strong>Open Questions</strong><span>08-open-questions/01-open-questions.md</span></a></li>
-          <li><a class="file-link" href="09-glossary/README.md"><strong>Glossary</strong><span>09-glossary/README.md</span></a></li>
-          <li><a class="file-link" href="10-evidence/01-source-map.md"><strong>Source Map</strong><span>10-evidence/01-source-map.md</span></a></li>
-          <li><a class="file-link" href="10-evidence/02-discussion-vs-code.md"><strong>Discussion vs Code</strong><span>10-evidence/02-discussion-vs-code.md</span></a></li>
+        <ul class="folder-grid">
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#content">Root/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes" target="_blank" rel="noopener noreferrer">GitHub root</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="README.md">README.md</a></li>
+              <li><a href="CHANGELOG.md">CHANGELOG.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#foundation">01-foundation/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/01-foundation" target="_blank" rel="noopener noreferrer">GitHub 01-foundation</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="01-foundation/01-executive-overview.md">01-executive-overview.md</a></li>
+              <li><a href="01-foundation/02-core-principles.md">02-core-principles.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#model">02-model/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/02-model" target="_blank" rel="noopener noreferrer">GitHub 02-model</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="02-model/01-json-first-model.md">01-json-first-model.md</a></li>
+              <li><a href="02-model/02-base-changes-construction.md">02-base-changes-construction.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#construction">03-construction/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/03-construction" target="_blank" rel="noopener noreferrer">GitHub 03-construction</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="03-construction/01-row-column-strategies.md">01-row-column-strategies.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#instructions">04-instructions/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/04-instructions" target="_blank" rel="noopener noreferrer">GitHub 04-instructions</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="04-instructions/01-instruction-lifecycle.md">01-instruction-lifecycle.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#mutation">05-mutation/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/05-mutation" target="_blank" rel="noopener noreferrer">GitHub 05-mutation</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="05-mutation/01-how-mutations-work.md">01-how-mutations-work.md</a></li>
+              <li><a href="05-mutation/02-serial-and-options-columns.md">02-serial-and-options-columns.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#review">06-codebase-review/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/06-codebase-review" target="_blank" rel="noopener noreferrer">GitHub 06-codebase-review</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="06-codebase-review/01-verified-findings.md">01-verified-findings.md</a></li>
+              <li><a href="06-codebase-review/02-find-by-role-and-jsonpathly.md">02-find-by-role-and-jsonpathly.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#options">07-design-options/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/07-design-options" target="_blank" rel="noopener noreferrer">GitHub 07-design-options</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="07-design-options/01-rebuild-vs-incremental-update.md">01-rebuild-vs-incremental-update.md</a></li>
+              <li><a href="07-design-options/02-json-validity-and-contract.md">02-json-validity-and-contract.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#questions">08-open-questions/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/08-open-questions" target="_blank" rel="noopener noreferrer">GitHub 08-open-questions</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="08-open-questions/01-open-questions.md">01-open-questions.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#glossary">09-glossary/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/09-glossary" target="_blank" rel="noopener noreferrer">GitHub 09-glossary</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="09-glossary/README.md">09-glossary/README.md</a></li>
+            </ul>
+          </li>
+          <li class="folder-card">
+            <div class="folder-head">
+              <a href="#evidence">10-evidence/</a>
+              <a class="folder-gh" href="https://github.com/keshavsoft/declarative-architecture-notes/tree/main/10-evidence" target="_blank" rel="noopener noreferrer">GitHub 10-evidence</a>
+            </div>
+            <ul class="folder-files">
+              <li><a href="10-evidence/01-source-map.md">01-source-map.md</a></li>
+              <li><a href="10-evidence/02-discussion-vs-code.md">02-discussion-vs-code.md</a></li>
+            </ul>
+          </li>
         </ul>
       </section>
     </main>
@@ -1287,7 +1495,7 @@
   </footer>
 
   <script type="module">
-    const navSelector = '.toc-nav a';
+    const navSelector = '.toc-nav a[href^="#"]';
     const sectionSelector = 'main section[id]';
 
     if (CSS.supports('scroll-target-group: auto')) {
